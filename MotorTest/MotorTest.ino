@@ -81,3 +81,51 @@ void loop() {
   setLeft(124);
   setRight(124);
 }
+
+/*
+const int motorRightPWM = 10;
+const int motorRightA = 5;
+const int motorRightB = 4;
+
+const int motorLeftPWM = 9;
+const int motorLeftA = 3;
+const int motorLeftB = 2;
+
+void setup() {
+  pinMode(motorLeftPWM, OUTPUT);
+  pinMode(motorLeftA, OUTPUT);
+  pinMode(motorLeftB, OUTPUT);
+
+  pinMode(motorRightPWM, OUTPUT);
+  pinMode(motorRightA, OUTPUT);
+  pinMode(motorRightB, OUTPUT);
+
+}
+
+void loop() {
+  digitalWrite(motorRightA, LOW);
+  digitalWrite(motorRightB, HIGH);
+  digitalWrite(motorLeftA, LOW);
+  digitalWrite(motorLeftB, HIGH);
+  
+  analogWrite(motorRightPWM, 200);
+  analogWrite(motorLeftPWM, 200);
+  
+  delay(2000);
+
+  analogWrite(motorRightPWM, 80);
+  analogWrite(motorLeftPWM, 80);
+
+  delay(2000);
+
+  digitalWrite(motorRightA, LOW);
+  digitalWrite(motorRightB, LOW);
+  analogWrite(motorRightPWM, 0);
+
+  digitalWrite(motorLeftA, LOW);
+  digitalWrite(motorLeftB, LOW);
+  analogWrite(motorLeftPWM, 0);
+
+  delay(2000);
+}
+*/
