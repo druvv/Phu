@@ -174,8 +174,11 @@ void moveForwards() {
 // - MARK: MAIN LOOP
 
 void loop() {
+   // Needs to be a minimum of 29ms between pings to prevent cross-sensor echo according to NewPing documentation.
   int frontDistance = frontSonar.ping_cm();
+  delay(30);
   int leftDistance = leftSonar.ping_cm();
+  delay(30);
   int rightDistance = rightSonar.ping_cm();
 
   // If we are facing forwards, move forward until we detect a wall.
@@ -205,8 +208,6 @@ void loop() {
       moveForwards();
       delay(WALL_AVOIDANCE_TIME);
       turn(clockwise);
-    } else {
-      moveForwards();
     }
    // If we are facing right, move until we don't detect a left wall. 
   } else if (robotDirection == right) {
@@ -218,12 +219,11 @@ void loop() {
       moveForwards();
       delay(WALL_AVOIDANCE_TIME);
       turn(counterclockwise);
-    } else {
-      moveForwards();
     }
-  } else {
-    moveForwards();
   }
+
+  moveForwards();
+  delay(30);
 } 
 
 
