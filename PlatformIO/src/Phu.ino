@@ -1,6 +1,8 @@
 #include "Arduino.h"
 #include "NewPing.h"
 
+#define DUBUG_MODE
+
 const int motorRightPWM = 11;
 const int motorRightA = 5;
 const int motorRightB = 4;
@@ -34,11 +36,11 @@ NewPing leftSonar(leftTrig, leftEcho, MAX_DISTANCE);
 NewPing rightSonar(rightTrig, rightEcho, MAX_DISTANCE);
 
 void setup() {
-  Serial.begin(9600);
-
-  while (!Serial) {} // Wait for serial to connect
-
-  Serial.println("Awake!");
+  #ifdef DUBUG_MODE
+    Serial.begin(9600);
+    while (!Serial) {} // Wait for serial to connect
+    Serial.println("Awake!");
+  #endif
 
   pinMode(motorLeftPWM, OUTPUT);
   pinMode(motorLeftA, OUTPUT);
@@ -129,13 +131,15 @@ void rotateRobotDirection(TurnDirection direction) {
     break;
   }
 
-  if (robotDirection == forwards) {
-    Serial.println("DIR: F");
-  } else if (robotDirection == left) {
-    Serial.println("DIR: L");
-  } else {
-    Serial.println("DIR: R");
-  }
+  #ifdef DEBUG_MODE
+    if (robotDirection == forwards) {
+      Serial.println("DIR: F");
+    } else if (robotDirection == left) {
+      Serial.println("DIR: L");
+    } else {
+      Serial.println("DIR: R");
+    }
+  #endif
 }
 
 void turn(TurnDirection direction) {
