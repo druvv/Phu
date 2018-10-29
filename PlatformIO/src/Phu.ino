@@ -21,8 +21,9 @@ const int rightTrig = 13;
 const int rightEcho = 12;
 
 // -- MARK: PROGRAM CONFIGURATION
-const int MAX_DISTANCE = 200; // cm
+const int MAX_DISTANCE = 100; // cm
 const int WALL_DETECT_THRESHOLD = 10; // 10 cm
+const int WALL_CENTERING_DISTANCE = 7; // 7cm
 const int TURN_TIME = 1000; // ms
 const int WALL_AVOIDANCE_TIME = 500; // ms
 bool defaultTurnIsLeft = true;
@@ -34,6 +35,9 @@ Facing robotDirection = forwards;
 NewPing frontSonar(frontTrig, frontEcho, MAX_DISTANCE);
 NewPing leftSonar(leftTrig, leftEcho, MAX_DISTANCE);
 NewPing rightSonar(rightTrig, rightEcho, MAX_DISTANCE);
+long frontDistance = 0;
+long leftDistance = 0;
+long rightDistance = 0;
 
 void setup() {
   #ifdef DUBUG_MODE
@@ -131,7 +135,7 @@ void rotateRobotDirection(TurnDirection direction) {
     break;
   }
 
-  #ifdef DEBUG_MODE
+  #ifdef DUBUG_MODE
     if (robotDirection == forwards) {
       Serial.println("DIR: F");
     } else if (robotDirection == left) {
@@ -170,20 +174,72 @@ void turn(TurnDirection direction) {
   rotateRobotDirection(direction);
 }
 
+void crawl(TurnDirection direction) {
+  int fastSpeed = 250;
+  int slowSpeed = 150;
+
+  switch (direction) {
+  case clockwise:
+      setLeft(fastSpeed);
+      setRight(slowSpeed);
+      break;
+  case counterclockwise:
+      setLeft(slowSpeed);
+      setRight(fastSpeed);
+      break;
+  default:
+    break;
+  }
+}
+
+// Moves forward with a basic centering algorithm
 void moveForwards() {
-  setLeft(250);
-  setRight(250);
+  if (rightDistance <= WALL_DETECT_THRESHOLD && leftDistance <= WALL_DETECT_THRESHOLD) {
+    if (rightDistance > leftDistance) {
+      crawl(clockwise);
+    } else {
+      crawl(counterclockwise);
+    }
+  } else if (rightDistance <= WALL_DETECT_THRESHOLD) {
+    if (rightDistance < WALL_CENTERING_DISTANCE) {
+      crawl(counterclockwise);
+    } else {
+      crawl(clockwise);
+    }
+  } else if (leftDistance <= WALL_DETECT_THRESHOLD) {
+    if (leftDistance < WALL_CENTERING_DISTANCE) {
+      crawl(clockwise);
+    } else {
+      crawl(counterclockwise);
+    }
+  }
+}
+
+void verifyDistances() {
+  if (frontDistance == 0) {
+    frontDistance = 10000;
+  }
+
+  if (leftDistance == 0) {
+    leftDistance = 10000;
+  }
+
+  if (rightDistance == 0) {
+    rightDistance = 10000;
+  }
 }
 
 // - MARK: MAIN LOOP
 
 void loop() {
    // Needs to be a minimum of 29ms between pings to prevent cross-sensor echo according to NewPing documentation.
-  int frontDistance = frontSonar.ping_cm();
+  frontDistance = frontSonar.ping_cm();
   delay(30);
-  int leftDistance = leftSonar.ping_cm();
+  leftDistance = leftSonar.ping_cm();
   delay(30);
-  int rightDistance = rightSonar.ping_cm();
+  rightDistance = rightSonar.ping_cm();
+
+  verifyDistances();
 
   // If we are facing forwards, move forward until we detect a wall.
   if (robotDirection == forwards && frontDistance <= WALL_DETECT_THRESHOLD) {
@@ -209,7 +265,7 @@ void loop() {
       turn(around);
     } else if (rightDistance > WALL_DETECT_THRESHOLD) {
       // Move a little to center ourselves, then go forwards.
-      moveForwards();
+      setLeft(250); setRight(250);
       delay(WALL_AVOIDANCE_TIME);
       turn(clockwise);
     }
@@ -220,12 +276,13 @@ void loop() {
       turn(around);
     } else if (leftDistance > WALL_DETECT_THRESHOLD) {
       // Move a little to center ourselves, then go forwards.
-      moveForwards();
+      setLeft(250); setRight(250);
       delay(WALL_AVOIDANCE_TIME);
       turn(counterclockwise);
     }
   }
 
+  // Move according to centering program
   moveForwards();
   delay(30);
 } 
