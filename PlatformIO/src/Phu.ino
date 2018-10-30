@@ -22,10 +22,10 @@ const int rightEcho = 12;
 
 // -- MARK: PROGRAM CONFIGURATION
 const int MAX_DISTANCE = 100; // cm
-const int WALL_DETECT_THRESHOLD = 10; // 10 cm
-const int WALL_CENTERING_DISTANCE = 7; // 7cm
-const int TURN_TIME = 1000; // ms
-const int WALL_AVOIDANCE_TIME = 500; // ms
+const int WALL_DETECT_THRESHOLD = 22; // 10 cm
+const int WALL_CENTERING_DISTANCE = 20; // 7cm - only used when only one wall is detected
+const int TURN_TIME = 2000; // ms
+const int WALL_AVOIDANCE_TIME = 1000; // ms
 bool defaultTurnIsLeft = true;
 
 enum TurnDirection {counterclockwise, clockwise, around};
@@ -194,6 +194,7 @@ void crawl(TurnDirection direction) {
 
 // Moves forward with a basic centering algorithm
 void moveForwards() {
+  Serial.println("Moving");
   if (rightDistance <= WALL_DETECT_THRESHOLD && leftDistance <= WALL_DETECT_THRESHOLD) {
     if (rightDistance > leftDistance) {
       crawl(clockwise);
@@ -213,6 +214,7 @@ void moveForwards() {
       crawl(counterclockwise);
     }
   }
+  delay(1000);
 }
 
 void verifyDistances() {
@@ -254,7 +256,7 @@ void loop() {
     // If the left wall is closer than the right wall, move right.
     } else if (difference < 0) {
       turn(clockwise);
-    // If the right wall us closer than the left wall, move left.
+    // If the right wall is closer than the left wall, move left.
     } else {
       turn(counterclockwise);
     }
