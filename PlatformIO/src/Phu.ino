@@ -21,11 +21,13 @@ const int rightTrig = 13;
 const int rightEcho = 12;
 
 // -- MARK: PROGRAM CONFIGURATION
-const int MAX_DISTANCE = 100; // cm
-const int WALL_DETECT_THRESHOLD = 22; // 10 cm
+const int MAX_DISTANCE = 50; // cm
+const int WALL_DETECT_THRESHOLD = 22;
+const int FRONT_WALL_DETECT_THRESHOLD = 20; 
 const int WALL_CENTERING_DISTANCE = 20; // 7cm - only used when only one wall is detected
-const int TURN_TIME = 2000; // ms
-const int WALL_AVOIDANCE_TIME = 1000; // ms
+const int TURN_TIME = 500; // ms
+const int WALL_AVOIDANCE_TIME = 250; // ms
+const int speed = 180 ;
 bool defaultTurnIsLeft = true;
 
 enum TurnDirection {counterclockwise, clockwise, around};
@@ -40,11 +42,9 @@ long leftDistance = 0;
 long rightDistance = 0;
 
 void setup() {
-  #ifdef DUBUG_MODE
-    Serial.begin(9600);
-    while (!Serial) {} // Wait for serial to connect
-    Serial.println("Awake!");
-  #endif
+  Serial.begin(9600);
+  while (!Serial) {} // Wait for serial to connect
+  Serial.println("Awake!");
 
   pinMode(motorLeftPWM, OUTPUT);
   pinMode(motorLeftA, OUTPUT);
@@ -134,34 +134,33 @@ void rotateRobotDirection(TurnDirection direction) {
 
     break;
   }
+ 
+  if (robotDirection == forwards) {
+    Serial.println("DIR: F");
+  } else if (robotDirection == left) {
+    Serial.println("DIR: L");
+  } else {
+    Serial.println("DIR: R");
+  }
 
-  #ifdef DUBUG_MODE
-    if (robotDirection == forwards) {
-      Serial.println("DIR: F");
-    } else if (robotDirection == left) {
-      Serial.println("DIR: L");
-    } else {
-      Serial.println("DIR: R");
-    }
-  #endif
 }
 
 void turn(TurnDirection direction) {
   switch (direction) {
   case counterclockwise:
-    setLeft(-250);
-    setRight(250);
+    setLeft(-speed);
+    setRight(speed);
     delay(TURN_TIME);
     break;
   case clockwise:
-    setLeft(250);
-    setRight(-250);
+    setLeft(speed);
+    setRight(-speed);
     robotDirection = right;
     delay(TURN_TIME);
     break;
   case around:
-    setLeft(-250);
-    setRight(250);
+    setLeft(-speed);
+    setRight(speed);
     if (robotDirection == left) {
       robotDirection = right;
     } else {
@@ -174,18 +173,20 @@ void turn(TurnDirection direction) {
   rotateRobotDirection(direction);
 }
 
-void crawl(TurnDirection direction) {
-  int fastSpeed = 250;
-  int slowSpeed = 150;
-
+void crawl(TurnDirection direction) {c
+  int fastSpeed = speed;
+  int slowSpeed = speed - 25;
+  Serial.print(direction);
   switch (direction) {
   case clockwise:
       setLeft(fastSpeed);
       setRight(slowSpeed);
+      Serial.println("Crawling Right");
       break;
   case counterclockwise:
       setLeft(slowSpeed);
       setRight(fastSpeed);
+      Serial.println("Crawling Left");
       break;
   default:
     break;
@@ -194,7 +195,6 @@ void crawl(TurnDirection direction) {
 
 // Moves forward with a basic centering algorithm
 void moveForwards() {
-  Serial.println("Moving");
   if (rightDistance <= WALL_DETECT_THRESHOLD && leftDistance <= WALL_DETECT_THRESHOLD) {
     if (rightDistance > leftDistance) {
       crawl(clockwise);
@@ -213,8 +213,10 @@ void moveForwards() {
     } else {
       crawl(counterclockwise);
     }
+  } else {
+    Serial.println("Crawling Forward");
+    setLeft(speed); setRight(speed);
   }
-  delay(1000);
 }
 
 void verifyDistances() {
@@ -231,6 +233,12 @@ void verifyDistances() {
   }
 }
 
+void printDistances() {
+  Serial.println("Left: " + String(int(leftDistance)));
+  Serial.println("Center: " + String(int(frontDistance)));
+  Serial.println("Right: " + String(int(rightDistance)));
+}
+
 // - MARK: MAIN LOOP
 
 void loop() {
@@ -242,9 +250,10 @@ void loop() {
   rightDistance = rightSonar.ping_cm();
 
   verifyDistances();
+  //printDistances();
 
   // If we are facing forwards, move forward until we detect a wall.
-  if (robotDirection == forwards && frontDistance <= WALL_DETECT_THRESHOLD) {
+  if (robotDirection == forwards && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
     int difference = leftDistance - rightDistance;
     // If the left and right walls are about equally apart turn in the default direction.
     if (abs(difference) < 10) {
@@ -263,22 +272,22 @@ void loop() {
   // If we are facing left, move until we don't detect a right wall.
   } else if (robotDirection == left) {
     // If there are walls on all three sides, turn around.
-    if (leftDistance <= WALL_DETECT_THRESHOLD && rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= WALL_DETECT_THRESHOLD) {
+    if (leftDistance <= WALL_DETECT_THRESHOLD && rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
       turn(around);
     } else if (rightDistance > WALL_DETECT_THRESHOLD) {
       // Move a little to center ourselves, then go forwards.
-      setLeft(250); setRight(250);
+      setLeft(speed); setRight(speed);
       delay(WALL_AVOIDANCE_TIME);
       turn(clockwise);
     }
    // If we are facing right, move until we don't detect a left wall. 
   } else if (robotDirection == right) {
     // If there are walls on all three sides, turn around.
-    if (leftDistance <= WALL_DETECT_THRESHOLD && rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= WALL_DETECT_THRESHOLD) {
+    if (leftDistance <= WALL_DETECT_THRESHOLD && rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
       turn(around);
     } else if (leftDistance > WALL_DETECT_THRESHOLD) {
       // Move a little to center ourselves, then go forwards.
-      setLeft(250); setRight(250);
+      setLeft(speed); setRight(speed);
       delay(WALL_AVOIDANCE_TIME);
       turn(counterclockwise);
     }
