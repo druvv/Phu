@@ -16,7 +16,7 @@ const int frontEcho = 6;
 
 const int leftTrig = 9;
 const int leftEcho = 8;
-
+ 
 const int rightTrig = 13;
 const int rightEcho = 12;
 
@@ -30,7 +30,7 @@ const int WALL_AVOIDANCE_TIME = 800; // ms
 const int speed =  140;
 bool defaultTurnIsLeft = false;
 
-enum TurnDirection {counterclockwise, clockwise, around};
+enum TurnDirection {counterclockwise, clockwise, aroundCW, aroundCCW};
 enum Facing {left, right, forwards};
 Facing robotDirection = forwards;
 
@@ -40,6 +40,9 @@ NewPing rightSonar(rightTrig, rightEcho, MAX_DISTANCE);
 long frontDistance = 0;
 long leftDistance = 0;
 long rightDistance = 0;
+
+long leftOldDistance = -1;
+long rightOldDistance = -1;
 
 void setup() {
   Serial.begin(9600);
@@ -108,7 +111,7 @@ void rotateRobotDirection(TurnDirection direction) {
       robotDirection = forwards;
     }
 
-    if (direction == around) {
+    if (direction == aroundCCW || direction == aroundCW) {
       robotDirection = right;
     }
 
@@ -118,7 +121,7 @@ void rotateRobotDirection(TurnDirection direction) {
       robotDirection = forwards;
     }
 
-    if (direction == around) {
+    if (direction == aroundCCW || direction == aroundCW) {
       robotDirection = left;
     }
 
@@ -155,17 +158,16 @@ void turn(TurnDirection direction) {
   case clockwise:
     setLeft(speed);
     setRight(-speed);
-    robotDirection = right;
     delay(TURN_TIME);
     break;
-  case around:
+  case aroundCW:
+    setLeft(speed);
+    setRight(-speed);
+    delay(TURN_TIME * 2);
+    break;
+  case aroundCCW:
     setLeft(-speed);
     setRight(speed);
-    if (robotDirection == left) {
-      robotDirection = right;
-    } else {
-      robotDirection = left;
-    }
     delay(TURN_TIME * 2);
     break;
   }
@@ -175,7 +177,7 @@ void turn(TurnDirection direction) {
 
 void crawl(TurnDirection direction) {
   int fastSpeed = speed;
-  int slowSpeed = speed - 30;
+  int slowSpeed = speed - 40;
   switch (direction) {
   case clockwise:
       setLeft(fastSpeed);
@@ -241,6 +243,9 @@ void printDistances() {
 // - MARK: MAIN LOOP
 
 void loop() {
+  leftOldDistance = leftDistance;
+  rightOldDistance = rightDistance;
+
    // Needs to be a minimum of 29ms between pings to prevent cross-sensor echo according to NewPing documentation.
   frontDistance = frontSonar.ping_cm();
   delay(30);
@@ -276,13 +281,13 @@ void loop() {
   // If we are facing left, move until we don't detect a right wall.
   } else if (robotDirection == left) {
     // If there are walls on all three sides, turn around.
-    if (leftDistance <= WALL_DETECT_THRESHOLD && rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
-      turn(around);
+    if (rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
+      turn(aroundCCW);
     } else if (rightDistance > WALL_DETECT_THRESHOLD) {
       if (frontDistance <= 60) {
         while (frontDistance > 8) {
-          frontDistance = frontSonar.ping_cm();
           delay(30);
+          frontDistance = frontSonar.ping_cm();
           moveForwards();
           Serial.println("e");
         }
@@ -297,13 +302,13 @@ void loop() {
    // If we are facing right, move until we don't detect a left wall. 
   } else if (robotDirection == right) {
     // If there are walls on all three sides, turn around.
-    if (leftDistance <= WALL_DETECT_THRESHOLD && rightDistance <= WALL_DETECT_THRESHOLD && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
-      turn(around);
+    if (leftDistance <= WALL_DETECT_THRESHOLD && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
+      turn(aroundCW);
     } else if (leftDistance > WALL_DETECT_THRESHOLD) {
       if (frontDistance <= 60) {
         while (frontDistance > 8) {
-          frontDistance = frontSonar.ping_cm();
           delay(30);
+          frontDistance = frontSonar.ping_cm();
           moveForwards();
           Serial.println("e");
         }
