@@ -18,17 +18,17 @@ const int leftTrig = 9;
 const int leftEcho = 8;
  
 const int rightTrig = 13;
-const int rightEcho = 12;
+const int rightEcho = 12; 
 
 // -- MARK: PROGRAM CONFIGURATION
 const int MAX_DISTANCE = 100; // cm
-const int WALL_DETECT_THRESHOLD = 15;
+const int WALL_DETECT_THRESHOLD = 18;
 const int FRONT_WALL_DETECT_THRESHOLD = 15; 
 const int WALL_CENTERING_DISTANCE = 10; // 7cm - only used when only one wall is detected
-const int TURN_TIME = 800; // ms
+const int TURN_TIME = 640; // ms
 const int WALL_AVOIDANCE_TIME = 800; // ms
 const int speed =  140;
-bool defaultTurnIsLeft = false;
+bool defaultTurnIsLeft = true;
 
 enum TurnDirection {counterclockwise, clockwise, aroundCW, aroundCCW};
 enum Facing {left, right, forwards};
@@ -37,12 +37,14 @@ Facing robotDirection = forwards;
 NewPing frontSonar(frontTrig, frontEcho, MAX_DISTANCE);
 NewPing leftSonar(leftTrig, leftEcho, MAX_DISTANCE);
 NewPing rightSonar(rightTrig, rightEcho, MAX_DISTANCE);
-long frontDistance = 0;
-long leftDistance = 0;
-long rightDistance = 0;
+long frontDistance = 10000;
+long leftDistance = 10000;
+long rightDistance = 10000;
 
-long leftOldDistance = -1;
-long rightOldDistance = -1;
+long leftOldDistance = 10000;
+long rightOldDistance = 10000;
+
+long startTime = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -61,6 +63,8 @@ void setup() {
   digitalWrite(motorLeftB, HIGH);
   digitalWrite(motorRightA, LOW);
   digitalWrite(motorRightB, HIGH);
+
+  startTime = millis();
 }
 
 // - MARK: MOTOR SPEEDS
@@ -258,11 +262,13 @@ void loop() {
 
   //delay(500);
 
+  if(millis() - startTime < 5000) { return; }
+
   // If we are facing forwards, move forward until we detect a wall.
   if (robotDirection == forwards && frontDistance <= FRONT_WALL_DETECT_THRESHOLD) {
     int difference = leftDistance - rightDistance;
-    // If the left and right walls are about equally apart turn in the default direction.
-    if (abs(difference) < 10) {
+    // If we don't detect any walls, turn in the default direction.
+    if (leftDistance > WALL_DETECT_THRESHOLD && rightDistance > WALL_DETECT_THRESHOLD) {
       Serial.println("T Default");
       if (defaultTurnIsLeft) {
         turn(counterclockwise);
@@ -285,10 +291,10 @@ void loop() {
       turn(aroundCCW);
     } else if (rightDistance > WALL_DETECT_THRESHOLD) {
       if (frontDistance <= 60) {
-        while (frontDistance > 8) {
+        while (frontDistance > 10) {
           delay(30);
           frontDistance = frontSonar.ping_cm();
-          moveForwards();
+          setRight(speed); setLeft(speed);
           Serial.println("e");
         }
         turn(clockwise);
@@ -306,10 +312,10 @@ void loop() {
       turn(aroundCW);
     } else if (leftDistance > WALL_DETECT_THRESHOLD) {
       if (frontDistance <= 60) {
-        while (frontDistance > 8) {
+        while (frontDistance > 10) {
           delay(30);
           frontDistance = frontSonar.ping_cm();
-          moveForwards();
+          setRight(speed); setLeft(speed);
           Serial.println("e");
         }
         turn(counterclockwise);
